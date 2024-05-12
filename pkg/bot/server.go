@@ -11,8 +11,8 @@ import (
 // StartBot starts the bot, inits all the requited submodules and routine for shutdown
 func StartBot(cfg config.Config) {
 	store.NewStore()
-	ch := router.New(cfg.Bot).NewUpdateChan()
+	ch := router.New(cfg.Bot)
 
 	slog.Info("[StartBot] Starting Bot")
-	ch.ListenAndServe()
+	ch.Start()
 }

@@ -37,8 +37,9 @@ func generateAPIPayloadMinimal(chatID int64, promptID int) contract.ChatCompleti
 			Content: getSystemPrompt(chatID),
 		}}),
 		BasicModelTweaks: contract.BasicModelTweaks{
-			Temperature:   0.8,
-			MaxTokens:     256,
+			Temperature: 0.8,
+			// MaxTokens:     256,
+			MaxTokens:     1024,
 			ContextLength: 8192,
 		},
 	}

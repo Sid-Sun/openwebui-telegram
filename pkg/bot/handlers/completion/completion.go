@@ -6,97 +6,96 @@ import (
 	"time"
 
 	"github.com/bep/debounce"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/sid-sun/openwebui-bot/pkg/bot/contract"
 	"github.com/sid-sun/openwebui-bot/pkg/bot/service"
 	"github.com/sid-sun/openwebui-bot/pkg/bot/store"
+	tele "gopkg.in/telebot.v3"
 )
 
 var logger = slog.Default().With(slog.String("package", "Completion"))
 
 // Handler handles all repeat requests
-func Handler(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
-	logger.Info("[Completion] [Attempt]")
+func Handler(b *tele.Bot, isResend bool) tele.HandlerFunc {
+	return func(c tele.Context) error {
+		logger.Info("[Completion] [Attempt]", slog.Bool("is_resend", isResend))
 
-	// Check if this is a resend attempt
-	promptID := update.Message.MessageID
-	isResend := false
-	if update.Message.IsCommand() {
-		switch update.Message.Command() {
-		case "resend":
-			replyToMessage := store.ChatStore[update.FromChat().ID][update.Message.ReplyToMessage.MessageID]
-			if update.Message.ReplyToMessage == nil || replyToMessage == nil {
-				// drop invalid request
-				em := tgbotapi.NewMessage(update.FromChat().ID, "Reply to the message you want to regenerate from - it can't be a previous /resend message")
-				bot.Send(em)
-				return
+		// Check if this is a resend attempt
+		promptID := c.Message().ID
+		if isResend {
+			if c.Message().ReplyTo == nil {
+				c.Send("Reply to the message you want to regenerate from")
+				return nil
 			}
-			if replyToMessage.From != update.Message.From.UserName {
-				// invalid request
-				em := tgbotapi.NewMessage(update.FromChat().ID, "Last message for resend must be a user message")
-				bot.Send(em)
+			replyToMessage := store.ChatStore[c.Chat().ID][c.Message().ReplyTo.ID]
+			if replyToMessage == nil {
+				c.Send("Reply to message can't be a previous /resend message or previous conversation is lost")
+				return nil
 			}
-			promptID = update.Message.ReplyToMessage.MessageID
-			isResend = true
+			if replyToMessage.From != c.Chat().Username {
+				c.Send("Last message for resend must be a user message")
+				return nil
+			}
+			promptID = c.Message().ReplyTo.ID
 		}
-	}
 
-	action := tgbotapi.NewChatAction(update.Message.Chat.ID, tgbotapi.ChatTyping)
-	bot.Send(action)
+		// notify user we are processing
+		c.Notify(tele.Typing)
 
-	if !isResend {
-		addMessageToChain(update.Message)
-	}
-
-	updatesChan := make(chan contract.CompletionUpdate, 100)
-	go func() {
-		err := service.GetChatResponseStream(update.Message.Chat.ID, promptID, updatesChan)
-		if err != nil {
-			logger.Error("could not generate completion", slog.String("conext", "GetChatResponseStream"), slog.Any("error", err))
+		if !isResend {
+			addMessageToChain(c.Message())
 		}
-	}()
 
-	firstCompletion := <-updatesChan
-
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, firstCompletion.Message)
-	msg.ReplyToMessageID = promptID
-	// msg.ReplyMarkup = tgbotapi.ForceReply{ForceReply: true}
-
-	botMessage, err := bot.Send(msg)
-	if err != nil {
-		logger.Error("failed to send message", slog.String("context", "new completion message"), slog.Any("error", err))
-		return
-	}
-
-	debounced := debounce.New(5 * time.Millisecond)
-	for completion := range updatesChan {
-		if completion.IsLast {
-			break
-		}
-		edit := tgbotapi.NewEditMessageText(update.Message.Chat.ChatConfig().ChatID, botMessage.MessageID, completion.Message)
-		send := func() {
-			botMessage.Text = edit.Text
-			_, err = bot.Send(edit)
+		updatesChan := make(chan contract.CompletionUpdate, 100)
+		go func() {
+			err := service.GetChatResponseStream(c.Chat().ID, promptID, updatesChan)
 			if err != nil {
-				logger.Error("failed to send message", slog.String("context", "edit completion message"), slog.Any("error", err))
-				return
+				logger.Error("could not generate completion", slog.String("conext", "GetChatResponseStream"), slog.Any("error", err))
+			}
+		}()
+
+		firstCompletion := <-updatesChan
+
+		replyTo := c.Message()
+		if isResend {
+			replyTo = c.Message().ReplyTo
+		}
+
+		botMessage, err := b.Send(c.Chat(), firstCompletion.Message, &tele.SendOptions{
+			ReplyTo: replyTo,
+		})
+		if err != nil {
+			logger.Error("failed to send message", slog.String("context", "new completion message"), slog.Any("error", err))
+			return err
+		}
+
+		var finalMessage *string
+		debounced := debounce.New(20 * time.Millisecond)
+		for completion := range updatesChan {
+			finalMessage = &completion.Message
+			send := func() {
+				_, err := b.Edit(botMessage, completion.Message)
+				if err != nil {
+					logger.Error("failed to send message", slog.String("context", "edit completion message"), slog.Any("error", err))
+					return
+				}
+			}
+			debounced(send)
+			if completion.IsLast {
+				break
 			}
 		}
-		debounced(send)
-	}
 
-	time.Sleep(10 * time.Millisecond)
-	botMessage.Chat = update.Message.Chat
-	botMessage.ReplyToMessage = update.Message
-	if isResend {
-		botMessage.ReplyToMessage = update.Message.ReplyToMessage
-	}
-	addMessageToChain(&botMessage)
-	// To print reply  messages, comment above and uncomment below
-	// bm := addMessageToChain(&botMessage)
-	// printReplyMessages(update.Message.Chat.ID, bm)
+		// the sleep may not actually be necessary
+		botMessage.Text = *finalMessage
 
-	slog.Info("[Completion] [Success]")
+		addMessageToChain(botMessage)
+		// To print reply  messages, comment above and uncomment below
+		// bm := addMessageToChain(botMessage)
+		// printReplyMessages(c.Chat().ID, bm)
+
+		slog.Info("[Completion] [Success]")
+		return nil
+	}
 }
 
 func printReplyMessages(chatID int64, m *contract.MessageLink) {
@@ -106,29 +105,31 @@ func printReplyMessages(chatID int64, m *contract.MessageLink) {
 	fmt.Printf("Message: %s\n", m.Text)
 }
 
-func addMessageToChain(m *tgbotapi.Message) *contract.MessageLink {
+func addMessageToChain(m *tele.Message) *contract.MessageLink {
 	if store.ChatStore[m.Chat.ID] == nil {
 		store.ChatStore[m.Chat.ID] = make(map[int]*contract.MessageLink)
 	}
 
 	var parent int
-	if m.ReplyToMessage != nil {
-		parent = m.ReplyToMessage.MessageID
+	if m.ReplyTo != nil {
+		parent = m.ReplyTo.ID
 		if store.ChatStore[m.Chat.ID][parent] == nil {
-			addMessageToChain(m.ReplyToMessage)
+			addMessageToChain(m.ReplyTo)
 		}
-		store.ChatStore[m.Chat.ID][parent].Children = append(store.ChatStore[m.Chat.ID][parent].Children, m.MessageID)
+		store.ChatStore[m.Chat.ID][parent].Children = append(store.ChatStore[m.Chat.ID][parent].Children, m.ID)
 	}
 
 	// fmt.Printf("Message: %+v\n", m)
-	if m.From == nil {
-		m.From = &tgbotapi.User{UserName: "unknown"}
+	if m.Sender == nil {
+		m.Sender = &tele.User{
+			Username: "unknown",
+		}
 	}
-	store.ChatStore[m.Chat.ID][m.MessageID] = &contract.MessageLink{
+	store.ChatStore[m.Chat.ID][m.ID] = &contract.MessageLink{
 		Parent:   parent,
 		Children: []int{},
 		Text:     m.Text,
-		From:     m.From.UserName,
+		From:     m.Sender.Username,
 	}
 
 	// x, err := json.MarshalIndent(store.ChatStore, "", "  ")
@@ -137,5 +138,5 @@ func addMessageToChain(m *tgbotapi.Message) *contract.MessageLink {
 	// }
 	// fmt.Println(string(x))
 
-	return store.ChatStore[m.Chat.ID][m.MessageID]
+	return store.ChatStore[m.Chat.ID][m.ID]
 }

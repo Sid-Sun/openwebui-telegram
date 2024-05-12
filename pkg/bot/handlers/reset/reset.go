@@ -3,23 +3,24 @@ package reset
 import (
 	"log/slog"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/sid-sun/openwebui-bot/pkg/bot/store"
+	tele "gopkg.in/telebot.v3"
 )
 
 var logger = slog.Default().With(slog.String("package", "Reset"))
 
-func Handler(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+func Handler(c tele.Context) error {
 	logger.Info("[Reset] [Attempt]")
 
-	prompt := update.Message.CommandArguments()
-	store.SystemPromptStore[update.FromChat().ID] = prompt
+	prompt := c.Message().Text
+	store.SystemPromptStore[c.Chat().ID] = prompt
 
-	m := tgbotapi.NewMessage(update.FromChat().ID, "System prompt updated")
-	_, err := bot.Send(m)
+	err := c.Send("System prompt updated")
 	if err != nil {
 		logger.Error("failed to send message", slog.Any("error", err))
+		return err
 	}
 
 	logger.Info("[Reset] [Success]")
+	return nil
 }
