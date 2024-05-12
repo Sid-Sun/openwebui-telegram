@@ -1,15 +1,18 @@
 package bot
 
 import (
-	"github.com/sid-sun/sample-bot/cmd/config"
-	"github.com/sid-sun/sample-bot/pkg/bot/router"
-	"go.uber.org/zap"
+	"log/slog"
+
+	"github.com/sid-sun/openwebui-bot/cmd/config"
+	"github.com/sid-sun/openwebui-bot/pkg/bot/router"
+	"github.com/sid-sun/openwebui-bot/pkg/bot/store"
 )
 
 // StartBot starts the bot, inits all the requited submodules and routine for shutdown
-func StartBot(cfg config.Config, logger *zap.Logger) {
-	ch := router.New(cfg.Bot, logger).NewUpdateChan()
+func StartBot(cfg config.Config) {
+	store.NewStore()
+	ch := router.New(cfg.Bot).NewUpdateChan()
 
-	logger.Info("[StartBot] Started Bot")
+	slog.Info("[StartBot] Starting Bot")
 	ch.ListenAndServe()
 }
