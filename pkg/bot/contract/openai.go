@@ -9,7 +9,7 @@ type ChatCompletionPayloadMinimal struct {
 type BasicModelTweaks struct {
 	ContextLength int     `json:"context_length"`
 	MaxTokens     int     `json:"max_tokens"`
-	Temperature   float32 `json:"temperature"`
+	Temperature   float64 `json:"temperature"`
 }
 
 type ChatCompletionPayload struct {
@@ -26,10 +26,10 @@ type ModelOptions struct {
 type ModelTweaks struct {
 	ContextLength    int     `json:"context_length"`
 	MaxTokens        int     `json:"max_tokens"`
-	FrequencyPenalty float32 `json:"frequency_penalty"`
-	PresencePenalty  float32 `json:"presence_penalty"`
-	Temperature      float32 `json:"temperature"`
-	RepeatPenalty    float32 `json:"repeat_penalty"`
+	FrequencyPenalty float64 `json:"frequency_penalty"`
+	PresencePenalty  float64 `json:"presence_penalty"`
+	Temperature      float64 `json:"temperature"`
+	RepeatPenalty    float64 `json:"repeat_penalty"`
 }
 
 type ChatMessage struct {

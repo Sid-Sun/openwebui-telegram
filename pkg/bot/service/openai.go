@@ -29,7 +29,7 @@ func generateMessages(chatID int64, promptID int, messages []contract.ChatMessag
 func generateAPIPayloadMinimal(chatID int64, promptID int) contract.ChatCompletionPayloadMinimal {
 	x := contract.ChatCompletionPayloadMinimal{
 		ModelOptions: contract.ModelOptions{
-			Model:  "dolphin-llama3:8b",
+			Model:  config.GlobalConfig.ModelOpts.Model,
 			Stream: true,
 		},
 		Messages: generateMessages(chatID, promptID, []contract.ChatMessage{{
@@ -37,10 +37,9 @@ func generateAPIPayloadMinimal(chatID int64, promptID int) contract.ChatCompleti
 			Content: getSystemPrompt(chatID),
 		}}),
 		BasicModelTweaks: contract.BasicModelTweaks{
-			Temperature: 0.8,
-			// MaxTokens:     256,
-			MaxTokens:     1024,
-			ContextLength: 8192,
+			Temperature:   config.GlobalConfig.ModelTweaks.Temperature,
+			MaxTokens:     config.GlobalConfig.ModelTweaks.MaxTokens,
+			ContextLength: config.GlobalConfig.ModelTweaks.ContextLength,
 		},
 	}
 	return x
@@ -49,7 +48,7 @@ func generateAPIPayloadMinimal(chatID int64, promptID int) contract.ChatCompleti
 func generateAPIPayload(chatID int64, promptID int) contract.ChatCompletionPayload {
 	x := contract.ChatCompletionPayload{
 		ModelOptions: contract.ModelOptions{
-			Model:  "dolphin-llama3:8b",
+			Model:  config.GlobalConfig.ModelOpts.Model,
 			Stream: true,
 		},
 		Messages: generateMessages(chatID, promptID, []contract.ChatMessage{{
@@ -57,27 +56,33 @@ func generateAPIPayload(chatID int64, promptID int) contract.ChatCompletionPaylo
 			Content: getSystemPrompt(chatID),
 		}}),
 		ModelTweaks: contract.ModelTweaks{
-			ContextLength:    8000,
-			MaxTokens:        128,
-			FrequencyPenalty: 1.0,
-			PresencePenalty:  1.5,
-			RepeatPenalty:    1.2,
-			Temperature:      0.8,
+			MaxTokens:        config.GlobalConfig.ModelTweaks.MaxTokens,
+			Temperature:      config.GlobalConfig.ModelTweaks.Temperature,
+			RepeatPenalty:    config.GlobalConfig.ModelTweaks.RepeatPenalty,
+			ContextLength:    config.GlobalConfig.ModelTweaks.ContextLength,
+			PresencePenalty:  config.GlobalConfig.ModelTweaks.PresencePenalty,
+			FrequencyPenalty: config.GlobalConfig.ModelTweaks.FrequencyPenalty,
 		},
 	}
 	return x
 }
 
 func GetChatResponseStream(chatID int64, promptID int, uc chan contract.CompletionUpdate) error {
-	payloadJSON := generateAPIPayloadMinimal(chatID, promptID)
-	payload, err := json.MarshalIndent(payloadJSON, "", "  ")
+	var payload any
+	if config.GlobalConfig.ModelOpts.UseMinimalTweaks() {
+		payload = generateAPIPayloadMinimal(chatID, promptID)
+	} else {
+		payload = generateAPIPayload(chatID, promptID)
+	}
+
+	payloadJSON, err := json.MarshalIndent(payload, "", "  ")
 	if err != nil {
 		panic(err)
 	}
-	logger.Debug("api payload", slog.String("payload", string(payload)))
+	logger.Debug("api payload", slog.String("payload", string(payloadJSON)))
 
 	client := &http.Client{}
-	req, err := http.NewRequest(http.MethodPost, config.GlobalConfig.OpenAIAPI.Endpoint+"chat/completions", bytes.NewReader(payload))
+	req, err := http.NewRequest(http.MethodPost, config.GlobalConfig.OpenAIAPI.Endpoint+"chat/completions", bytes.NewReader(payloadJSON))
 	if err != nil {
 		logger.Error("failed to create http request", slog.String("func", "GetChatResponseStream"), slog.Any("error", err))
 		return err
