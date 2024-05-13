@@ -49,6 +49,16 @@ The bot supports two commands:
 
 ## How to run
 
+### Docker Compose
+
+Copy the docker-compose.yml in this repo, create your env file in `dev.env` and run:
+
+```bash
+docker compose up
+```
+
+### Shell
+
 In the fish shell, you can just do:
 
 ```fish
@@ -60,6 +70,7 @@ bash:
 ```bash
 env $(cat dev.env | xargs -L 1) make serve
 ```
+
 
 ## Contributing
 
