@@ -10,7 +10,7 @@ tidy:
 	go mod tidy
 
 serve: fmt vet
-	env $(cat dev.env | xargs) go run cmd/*.go
+	env $(cat dev.env | xargs) go run ./cmd
 
 build: fmt vet
 	CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o bin/openwebui-telegram ./cmd
