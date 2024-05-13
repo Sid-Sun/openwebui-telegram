@@ -26,9 +26,9 @@ type ModelOptions struct {
 type ModelTweaks struct {
 	ContextLength    int     `json:"context_length"`
 	MaxTokens        int     `json:"max_tokens"`
+	Temperature      float64 `json:"temperature"`
 	FrequencyPenalty float64 `json:"frequency_penalty"`
 	PresencePenalty  float64 `json:"presence_penalty"`
-	Temperature      float64 `json:"temperature"`
 	RepeatPenalty    float64 `json:"repeat_penalty"`
 }
 
