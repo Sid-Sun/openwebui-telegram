@@ -47,6 +47,20 @@ The bot supports two commands:
 2. To regenerate a response, reply to the message you want to regenerate from and send `/resend`
    - Once the bot is restarted, the conversation history is lost and thread can't be continued.
 
+## How to run
+
+In the fish shell, you can just do:
+
+```fish
+env (cat dev.env | xargs -L 1) make serve
+```
+
+bash:
+
+```bash
+env $(cat dev.env | xargs -L 1) make serve
+```
+
 ## Contributing
 
 Contributions are welcome. Please submit a pull request or create an issue if you have any improvements or suggestions.
