@@ -11,12 +11,12 @@ import (
 	tele "gopkg.in/telebot.v3"
 )
 
-type bot struct {
+type Bot struct {
 	bot *tele.Bot
 }
 
 // ListenAndServe starts listens on the update channel and handles routing the update to handlers
-func (b bot) Start() {
+func (b Bot) Start() {
 	store.BotUsername = b.bot.Me.Username
 	slog.Info("[StartBot] Started Bot", slog.String("bot_name", b.bot.Me.FirstName))
 	r := b.bot.Group()
@@ -27,8 +27,13 @@ func (b bot) Start() {
 	b.bot.Start()
 }
 
+func (b Bot) Stop() {
+	slog.Info("[StopBot] Stopping Bot")
+	b.bot.Stop()
+}
+
 // New returns a new instance of the router
-func New(cfg config.BotConfig) bot {
+func New(cfg config.BotConfig) *Bot {
 	b, err := tele.NewBot(tele.Settings{
 		Token:  cfg.Token(),
 		Poller: &tele.LongPoller{Timeout: 10 * time.Second},
@@ -36,7 +41,7 @@ func New(cfg config.BotConfig) bot {
 	if err != nil {
 		panic(err)
 	}
-	return bot{
+	return &Bot{
 		bot: b,
 	}
 }

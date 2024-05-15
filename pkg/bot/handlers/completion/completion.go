@@ -71,6 +71,12 @@ func Handler(b *tele.Bot, isResend bool) tele.HandlerFunc {
 		var finalMessage *string
 		debounced := debounce.New(20 * time.Millisecond)
 		for completion := range updatesChan {
+			if finalMessage != nil && *finalMessage == completion.Message {
+				if completion.IsLast {
+					break
+				}
+				continue
+			}
 			finalMessage = &completion.Message
 			send := func() {
 				_, err := b.Edit(botMessage, completion.Message)
@@ -111,25 +117,16 @@ func addMessageToChain(m *tele.Message) *contract.MessageLink {
 	}
 
 	var parent int
-	if m.ReplyTo != nil {
+	// If this is a reply message, set the parent ID if it exists in the store
+	if m.ReplyTo != nil && store.ChatStore[m.Chat.ID][m.ReplyTo.ID] != nil {
 		parent = m.ReplyTo.ID
-		if store.ChatStore[m.Chat.ID][parent] == nil {
-			addMessageToChain(m.ReplyTo)
-		}
-		store.ChatStore[m.Chat.ID][parent].Children = append(store.ChatStore[m.Chat.ID][parent].Children, m.ID)
 	}
 
 	// fmt.Printf("Message: %+v\n", m)
-	if m.Sender == nil {
-		m.Sender = &tele.User{
-			Username: "unknown",
-		}
-	}
 	store.ChatStore[m.Chat.ID][m.ID] = &contract.MessageLink{
-		Parent:   parent,
-		Children: []int{},
-		Text:     m.Text,
-		From:     m.Sender.Username,
+		Parent: parent,
+		Text:   m.Text,
+		From:   m.Sender.Username,
 	}
 
 	// x, err := json.MarshalIndent(store.ChatStore, "", "  ")
