@@ -68,18 +68,19 @@ func Handler(b *tele.Bot, isResend bool) tele.HandlerFunc {
 			return err
 		}
 
-		var finalMessage *string
-		debounced := debounce.New(20 * time.Millisecond)
+		var lastMessage string
+		nextMessageRequiredLen := 0
+		debounced := debounce.New(200 * time.Millisecond)
 		for completion := range updatesChan {
-			if finalMessage != nil && *finalMessage == completion.Message {
-				if completion.IsLast {
-					break
-				}
+			// Only update message if the new message is at least 10% longer than last message
+			// To avoid Telegram rate limiting
+			if len(completion.Message) <= nextMessageRequiredLen && !completion.IsLast {
 				continue
 			}
-			finalMessage = &completion.Message
+			lastMessage = completion.Message
+			nextMessageRequiredLen = len(lastMessage) * 110 / 100
 			send := func() {
-				_, err := b.Edit(botMessage, completion.Message)
+				_, err := b.Edit(botMessage, lastMessage)
 				if err != nil {
 					logger.Error("failed to send message", slog.String("context", "edit completion message"), slog.Any("error", err))
 					return
@@ -92,7 +93,7 @@ func Handler(b *tele.Bot, isResend bool) tele.HandlerFunc {
 		}
 
 		// the sleep may not actually be necessary
-		botMessage.Text = *finalMessage
+		botMessage.Text = lastMessage
 
 		addMessageToChain(botMessage)
 		// To print reply  messages, comment above and uncomment below

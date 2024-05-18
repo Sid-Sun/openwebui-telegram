@@ -128,6 +128,9 @@ func resolveDeltaAndSendUpdates(res *http.Response, uc chan contract.CompletionU
 			}
 			return
 		}
+		if resp.Choices[0].Delta.Content == "" {
+			continue
+		}
 		uc <- contract.CompletionUpdate{
 			Message: message,
 			IsLast:  false,
