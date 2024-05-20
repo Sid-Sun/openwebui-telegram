@@ -27,49 +27,41 @@ func generateMessages(chatID int64, promptID int, messages []contract.ChatMessag
 }
 
 func generateAPIPayloadMinimal(chatID int64, promptID int) contract.ChatCompletionPayloadMinimal {
+	model := getModel(chatID)
 	x := contract.ChatCompletionPayloadMinimal{
 		ModelOptions: contract.ModelOptions{
-			Model:  config.GlobalConfig.ModelOpts.Model,
+			Model:  model.Model,
 			Stream: true,
 		},
 		Messages: generateMessages(chatID, promptID, []contract.ChatMessage{{
 			Role:    "system",
 			Content: getSystemPrompt(chatID),
 		}}),
-		BasicModelTweaks: contract.BasicModelTweaks{
-			Temperature:   config.GlobalConfig.ModelTweaks.Temperature,
-			MaxTokens:     config.GlobalConfig.ModelTweaks.MaxTokens,
-			ContextLength: config.GlobalConfig.ModelTweaks.ContextLength,
-		},
+		BasicModelTweaks: model.GetBasicTweaks(),
 	}
 	return x
 }
 
 func generateAPIPayload(chatID int64, promptID int) contract.ChatCompletionPayload {
+	model := getModel(chatID)
 	x := contract.ChatCompletionPayload{
 		ModelOptions: contract.ModelOptions{
-			Model:  config.GlobalConfig.ModelOpts.Model,
+			Model:  model.Model,
 			Stream: true,
 		},
 		Messages: generateMessages(chatID, promptID, []contract.ChatMessage{{
 			Role:    "system",
 			Content: getSystemPrompt(chatID),
 		}}),
-		ModelTweaks: contract.ModelTweaks{
-			MaxTokens:        config.GlobalConfig.ModelTweaks.MaxTokens,
-			Temperature:      config.GlobalConfig.ModelTweaks.Temperature,
-			RepeatPenalty:    config.GlobalConfig.ModelTweaks.RepeatPenalty,
-			ContextLength:    config.GlobalConfig.ModelTweaks.ContextLength,
-			PresencePenalty:  config.GlobalConfig.ModelTweaks.PresencePenalty,
-			FrequencyPenalty: config.GlobalConfig.ModelTweaks.FrequencyPenalty,
-		},
+		ModelTweaks: model.GetAdvancedTweaks(),
 	}
 	return x
 }
 
 func GetChatResponseStream(chatID int64, promptID int, uc chan contract.CompletionUpdate) error {
 	var payload any
-	if config.GlobalConfig.ModelOpts.UseMinimalTweaks() {
+	model := getModel(chatID)
+	if model.UseMinimalTweaks() {
 		payload = generateAPIPayloadMinimal(chatID, promptID)
 	} else {
 		payload = generateAPIPayload(chatID, promptID)

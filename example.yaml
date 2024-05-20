@@ -1,0 +1,12 @@
+api_token: "1234567890:efwjbfjbew_ewbfjkbwjkbfkjbwrjkvbkjr"
+openai:
+  api_key: "sk-12345667890abcdefghijkl"
+  endpoint: "http://localhost:3000/ollama/v1/"
+models:
+  - name: "default"
+    model: "llama3:instruct"
+    tweak_level: "basic" # any value but "advanced" is basic.
+    tweaks:
+      context_length: 8192
+      max_tokens: 1024
+      temperature: 0.8

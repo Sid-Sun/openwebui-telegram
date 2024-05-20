@@ -24,12 +24,12 @@ type ModelOptions struct {
 }
 
 type ModelTweaks struct {
-	ContextLength    int     `json:"context_length"`
-	MaxTokens        int     `json:"max_tokens"`
-	Temperature      float64 `json:"temperature"`
-	FrequencyPenalty float64 `json:"frequency_penalty"`
-	PresencePenalty  float64 `json:"presence_penalty"`
-	RepeatPenalty    float64 `json:"repeat_penalty"`
+	ContextLength    int     `json:"context_length" mapstructure:"context_length"`
+	MaxTokens        int     `json:"max_tokens" mapstructure:"max_tokens"`
+	Temperature      float64 `json:"temperature" mapstructure:"temperature"`
+	FrequencyPenalty float64 `json:"frequency_penalty" mapstructure:"frequency_penalty"`
+	PresencePenalty  float64 `json:"presence_penalty" mapstructure:"presence_penalty"`
+	RepeatPenalty    float64 `json:"repeat_penalty" mapstructure:"repeat_penalty"`
 }
 
 type ChatMessage struct {

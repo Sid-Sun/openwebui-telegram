@@ -2,6 +2,7 @@ out
 .idea/
 .vscode
 *.env
+data/
 *.iml
 *.DS_Store
 vendor/

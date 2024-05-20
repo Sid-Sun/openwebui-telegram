@@ -6,7 +6,8 @@ services:
     #   context: .
     #   dockerfile: Dockerfile
     image: realsidsun/openwebui-telegram:latest
-    env_file:
-      - dev.env
+    volumes:
+      - ./data/store:/app/store
+      - ./data/config:/app/config
     network_mode: host
     restart: unless-stopped

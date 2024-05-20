@@ -6,9 +6,11 @@ import (
 
 	"github.com/sid-sun/openwebui-bot/cmd/config"
 	"github.com/sid-sun/openwebui-bot/pkg/bot/handlers/completion"
+	"github.com/sid-sun/openwebui-bot/pkg/bot/handlers/models"
 	"github.com/sid-sun/openwebui-bot/pkg/bot/handlers/reset"
 	"github.com/sid-sun/openwebui-bot/pkg/bot/store"
 	tele "gopkg.in/telebot.v3"
+	"gopkg.in/telebot.v3/middleware"
 )
 
 type Bot struct {
@@ -19,9 +21,16 @@ type Bot struct {
 func (b Bot) Start() {
 	store.BotUsername = b.bot.Me.Username
 	slog.Info("[StartBot] Started Bot", slog.String("bot_name", b.bot.Me.FirstName))
-	r := b.bot.Group()
-	r.Use(StripCommand("/reset"))
-	r.Handle("/reset", reset.Handler)
+	// Register Special Commands
+	resetGroup := b.bot.Group()
+	resetGroup.Use(StripCommand("/reset"))
+	resetGroup.Handle("/reset", reset.Handler)
+	// Callbacks
+	callbackGroup := b.bot.Group()
+	callbackGroup.Use(middleware.AutoRespond())
+	callbackGroup.Handle("/models", models.GetModelsHandler(b.bot))
+	callbackGroup.Handle(tele.OnCallback, models.CallbackHandler(b.bot))
+	// Add all other handlers
 	b.bot.Handle("/resend", completion.Handler(b.bot, true))
 	b.bot.Handle(tele.OnText, completion.Handler(b.bot, false))
 	b.bot.Start()
