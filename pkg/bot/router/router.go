@@ -31,8 +31,9 @@ func (b Bot) Start() {
 	callbackGroup.Handle("/models", models.GetModelsHandler(b.bot))
 	callbackGroup.Handle(tele.OnCallback, models.CallbackHandler(b.bot))
 	// Add all other handlers
-	b.bot.Handle("/resend", completion.Handler(b.bot, true))
-	b.bot.Handle(tele.OnText, completion.Handler(b.bot, false))
+	b.bot.Handle("/resend", completion.Handler(b.bot, completion.RegenerateCompletion))
+	b.bot.Handle(tele.OnEdited, completion.Handler(b.bot, completion.EditCompletion))
+	b.bot.Handle(tele.OnText, completion.Handler(b.bot, completion.NewCompletion))
 	b.bot.Start()
 }
 

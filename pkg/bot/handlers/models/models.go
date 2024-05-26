@@ -17,9 +17,7 @@ func GetModelsHandler(b *tele.Bot) tele.HandlerFunc {
 		modelInfoMessage, modelOptions := getInlineKeyboardMarkup(store.ModelStore[c.Chat().ID])
 
 		mkp := b.NewMarkup()
-		mkp.InlineKeyboard = [][]tele.InlineButton{
-			modelOptions,
-		}
+		mkp.InlineKeyboard = modelOptions
 
 		b.Send(c.Chat(), modelInfoMessage, mkp)
 
@@ -40,9 +38,7 @@ func CallbackHandler(b *tele.Bot) tele.HandlerFunc {
 		store.ModelStore[c.Chat().ID] = model
 		modelInfoMessage, modelOptions := getInlineKeyboardMarkup(store.ModelStore[c.Chat().ID])
 		mkp := b.NewMarkup()
-		mkp.InlineKeyboard = [][]tele.InlineButton{
-			modelOptions,
-		}
+		mkp.InlineKeyboard = modelOptions
 		_, err := b.Edit(c.Callback().Message, modelInfoMessage, mkp)
 		if err != nil {
 			logger.Error("[Models] [Callback] [Error]", slog.String("error", err.Error()))

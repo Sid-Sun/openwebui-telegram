@@ -15,13 +15,13 @@ import (
 var logger = slog.Default().With(slog.String("package", "Completion"))
 
 // Handler handles all repeat requests
-func Handler(b *tele.Bot, isResend bool) tele.HandlerFunc {
+func Handler(b *tele.Bot, handlerMode HandlerMode) tele.HandlerFunc {
 	return func(c tele.Context) error {
-		logger.Info("[Completion] [Attempt]", slog.Bool("is_resend", isResend))
+		logger.Info("[Completion] [Attempt]", slog.Any("handlerMode", handlerMode))
 
 		// Check if this is a resend attempt
-		promptID := c.Message().ID
-		if isResend {
+		message := c.Message()
+		if handlerMode == RegenerateCompletion {
 			if c.Message().ReplyTo == nil {
 				c.Send("Reply to the message you want to regenerate from")
 				return nil
@@ -35,15 +35,14 @@ func Handler(b *tele.Bot, isResend bool) tele.HandlerFunc {
 				c.Send("Last message for resend must be a user message")
 				return nil
 			}
-			promptID = c.Message().ReplyTo.ID
+			message = c.Message().ReplyTo
 		}
+		promptID := message.ID
 
 		// notify user we are processing
 		c.Notify(tele.Typing)
 
-		if !isResend {
-			addMessageToChain(c.Message())
-		}
+		addMessageToChain(message)
 
 		updatesChan := make(chan contract.CompletionUpdate, 100)
 		go func() {
@@ -55,10 +54,7 @@ func Handler(b *tele.Bot, isResend bool) tele.HandlerFunc {
 
 		firstCompletion := <-updatesChan
 
-		replyTo := c.Message()
-		if isResend {
-			replyTo = c.Message().ReplyTo
-		}
+		replyTo := message
 
 		botMessage, err := b.Send(c.Chat(), firstCompletion.Message, &tele.SendOptions{
 			ReplyTo: replyTo,
