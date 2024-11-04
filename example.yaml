@@ -1,7 +1,7 @@
 api_token: "1234567890:efwjbfjbew_ewbfjkbwjkbfkjbwrjkvbkjr"
 openai:
   api_key: "sk-12345667890abcdefghijkl"
-  endpoint: "http://localhost:3000/ollama/v1/"
+  endpoint: "http://localhost:3000/api/"
 models:
   - name: "default"
     model: "llama3:instruct"
