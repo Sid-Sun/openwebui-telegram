@@ -21,6 +21,11 @@ type Model struct {
 	Model           string               `mapstructure:"model"`
 	modelTweakLevel string               `mapstructure:"tweak_level"`
 	Tweaks          contract.ModelTweaks `mapstructure:"tweaks"`
+	// ReasoningEffort is passed through verbatim as "reasoning_effort" to the
+	// backend for models that support toggling/tuning extended thinking (e.g.
+	// "none" to disable thinking, or "low"/"medium"/"high"). Leave empty to
+	// omit the field and let the backend/model use its own default.
+	ReasoningEffort string `mapstructure:"reasoning_effort"`
 }
 
 func (m Model) UseMinimalTweaks() bool {

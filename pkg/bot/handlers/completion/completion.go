@@ -3,6 +3,7 @@ package completion
 import (
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/bep/debounce"
@@ -38,6 +39,7 @@ func Handler(b *tele.Bot, handlerMode HandlerMode) tele.HandlerFunc {
 			message = c.Message().ReplyTo
 		}
 		promptID := message.ID
+		chatID := c.Chat().ID
 
 		// notify user we are processing
 		c.Notify(tele.Typing)
@@ -46,37 +48,59 @@ func Handler(b *tele.Bot, handlerMode HandlerMode) tele.HandlerFunc {
 
 		updatesChan := make(chan contract.CompletionUpdate, 100)
 		go func() {
-			err := service.GetChatResponseStream(c.Chat().ID, promptID, updatesChan)
+			err := service.GetChatResponseStream(chatID, promptID, updatesChan)
 			if err != nil {
 				logger.Error("could not generate completion", slog.String("conext", "GetChatResponseStream"), slog.Any("error", err))
 			}
 		}()
 
-		firstCompletion := <-updatesChan
-
 		replyTo := message
+		showThinking := store.ShowThinkingStore[chatID]
 
-		botMessage, err := b.Send(c.Chat(), firstCompletion.Message, &tele.SendOptions{
-			ReplyTo: replyTo,
-		})
-		if err != nil {
-			logger.Error("failed to send message", slog.String("context", "new completion message"), slog.Any("error", err))
-			return err
-		}
-
-		var lastMessage string
+		var botMessage *tele.Message
+		var lastContent, lastDisplay string
 		nextMessageRequiredLen := 0
 		debounced := debounce.New(200 * time.Millisecond)
 		for completion := range updatesChan {
-			// Only update message if the new message is at least 10% longer than last message
-			// To avoid Telegram rate limiting
-			if len(completion.Message) <= nextMessageRequiredLen && !completion.IsLast {
+			lastContent = completion.Content
+			// Trim: reasoning/content deltas are frequently whitespace-only
+			// (e.g. "\n\n", "  "). Telegram's API rejects an all-whitespace
+			// message body as empty, so a leading whitespace-only chunk must
+			// not be sent as-is.
+			display := strings.TrimSpace(formatDisplay(showThinking, completion))
+			if display == "" {
+				if completion.IsLast {
+					display = "(no response)"
+				} else {
+					// still thinking and nothing worth showing yet
+					continue
+				}
+			}
+
+			if botMessage == nil {
+				sent, err := b.Send(c.Chat(), display, &tele.SendOptions{ReplyTo: replyTo})
+				if err != nil {
+					logger.Error("failed to send message", slog.String("context", "new completion message"), slog.Any("error", err))
+					return err
+				}
+				botMessage = sent
+				lastDisplay = display
+				nextMessageRequiredLen = len(display) * 110 / 100
+				if completion.IsLast {
+					break
+				}
 				continue
 			}
-			lastMessage = completion.Message
-			nextMessageRequiredLen = len(lastMessage) * 110 / 100
+
+			// Only update message if the new message is at least 10% longer than last message
+			// To avoid Telegram rate limiting
+			if len(display) <= nextMessageRequiredLen && !completion.IsLast {
+				continue
+			}
+			lastDisplay = display
+			nextMessageRequiredLen = len(lastDisplay) * 110 / 100
 			send := func() {
-				_, err := b.Edit(botMessage, lastMessage)
+				_, err := b.Edit(botMessage, lastDisplay)
 				if err != nil {
 					logger.Error("failed to send message", slog.String("context", "edit completion message"), slog.Any("error", err))
 					return
@@ -88,8 +112,18 @@ func Handler(b *tele.Bot, handlerMode HandlerMode) tele.HandlerFunc {
 			}
 		}
 
-		// the sleep may not actually be necessary
-		botMessage.Text = lastMessage
+		if botMessage == nil {
+			// the stream produced nothing at all (e.g. request failed before any chunk arrived)
+			logger.Error("no response received from model", slog.String("context", "completion loop"))
+			return nil
+		}
+
+		// store only the actual reply content (not the thinking display) so
+		// future turns don't feed reasoning text back into the model as context
+		if lastContent == "" {
+			lastContent = "(no response)"
+		}
+		botMessage.Text = lastContent
 
 		addMessageToChain(botMessage)
 		// To print reply  messages, comment above and uncomment below
@@ -99,6 +133,21 @@ func Handler(b *tele.Bot, handlerMode HandlerMode) tele.HandlerFunc {
 		slog.Info("[Completion] [Success]")
 		return nil
 	}
+}
+
+// formatDisplay builds the text shown in Telegram for a given update. When
+// showThinking is disabled (the default), only the actual reply content is
+// shown, matching pre-reasoning-model behavior. When enabled, the model's
+// reasoning is shown above the content, labeled, so it isn't mistaken for
+// the answer itself.
+func formatDisplay(showThinking bool, u contract.CompletionUpdate) string {
+	if !showThinking || u.Reasoning == "" {
+		return u.Content
+	}
+	if u.Content == "" {
+		return "[Thinking...]\n" + u.Reasoning
+	}
+	return "[Thinking]\n" + u.Reasoning + "\n\n[Answer]\n" + u.Content
 }
 
 func printReplyMessages(chatID int64, m *contract.MessageLink) {

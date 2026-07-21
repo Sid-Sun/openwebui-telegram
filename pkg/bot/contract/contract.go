@@ -7,6 +7,7 @@ type MessageLink struct {
 }
 
 type CompletionUpdate struct {
-	Message string
-	IsLast  bool
+	Content   string
+	Reasoning string
+	IsLast    bool
 }

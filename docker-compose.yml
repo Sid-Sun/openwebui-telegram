@@ -2,12 +2,11 @@ version: "3"
 
 services:
   openwebui-telegram:
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile
-    image: realsidsun/openwebui-telegram:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: openwebui-telegram:local
     volumes:
       - ./data/store:/app/store
       - ./data/config:/app/config
-    network_mode: host
     restart: unless-stopped

@@ -19,8 +19,9 @@ type ChatCompletionPayload struct {
 }
 
 type ModelOptions struct {
-	Model  string `json:"model"`
-	Stream bool   `json:"stream"`
+	Model           string `json:"model"`
+	Stream          bool   `json:"stream"`
+	ReasoningEffort string `json:"reasoning_effort,omitempty"`
 }
 
 type ModelTweaks struct {
@@ -43,7 +44,8 @@ type ChatCompletionResponse struct {
 
 type ChatCompletionChoice struct {
 	Delta struct {
-		Content string `json:"content"`
+		Content          string `json:"content"`
+		ReasoningContent string `json:"reasoning_content"`
 	} `json:"delta"`
 	FinishReason string `json:"finish_reason"`
 }

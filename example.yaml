@@ -6,6 +6,11 @@ models:
   - name: "default"
     model: "llama3:instruct"
     tweak_level: "basic" # any value but "advanced" is basic.
+    # Optional. Passed through verbatim as "reasoning_effort" to backends that
+    # support toggling/tuning extended thinking (e.g. LM Studio, vLLM). Use
+    # "none" to disable thinking, or "low"/"medium"/"high" to tune it. Leave
+    # unset to omit the field entirely and use the backend's default.
+    reasoning_effort: ""
     tweaks:
       context_length: 8192
       max_tokens: 1024

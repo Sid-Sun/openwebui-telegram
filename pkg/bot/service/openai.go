@@ -30,8 +30,9 @@ func generateAPIPayloadMinimal(chatID int64, promptID int) contract.ChatCompleti
 	model := getModel(chatID)
 	x := contract.ChatCompletionPayloadMinimal{
 		ModelOptions: contract.ModelOptions{
-			Model:  model.Model,
-			Stream: true,
+			Model:           model.Model,
+			Stream:          true,
+			ReasoningEffort: model.ReasoningEffort,
 		},
 		Messages: generateMessages(chatID, promptID, []contract.ChatMessage{{
 			Role:    "system",
@@ -46,8 +47,9 @@ func generateAPIPayload(chatID int64, promptID int) contract.ChatCompletionPaylo
 	model := getModel(chatID)
 	x := contract.ChatCompletionPayload{
 		ModelOptions: contract.ModelOptions{
-			Model:  model.Model,
-			Stream: true,
+			Model:           model.Model,
+			Stream:          true,
+			ReasoningEffort: model.ReasoningEffort,
 		},
 		Messages: generateMessages(chatID, promptID, []contract.ChatMessage{{
 			Role:    "system",
@@ -95,37 +97,58 @@ func GetChatResponseStream(chatID int64, promptID int, uc chan contract.Completi
 }
 
 func resolveDeltaAndSendUpdates(res *http.Response, uc chan contract.CompletionUpdate) {
-	var message string
+	var content, reasoning string
 	scanner := bufio.NewScanner(res.Body)
 	for scanner.Scan() {
 		data := scanner.Text()
 
 		dataFields := strings.Split(data, "data: ")
 		if len(dataFields) == 1 {
-			// skip initial request without data
+			// skip lines without a data payload (blank lines, SSE comments)
 			continue
+		}
+
+		// the stream is terminated by a literal "data: [DONE]" line, which is
+		// not JSON and carries no choices - stop before trying to parse it
+		if dataFields[1] == "[DONE]" {
+			return
 		}
 
 		var resp contract.ChatCompletionResponse
 		err := json.Unmarshal([]byte(dataFields[1]), &resp)
 		if err != nil {
 			logger.Error("failed to unmarshal payload body", slog.Any("error", err))
+			continue
+		}
+		if len(resp.Choices) == 0 {
+			continue
 		}
 
-		message += resp.Choices[0].Delta.Content
-		if resp.Choices[0].FinishReason == "stop" {
-			uc <- contract.CompletionUpdate{
-				Message: message,
-				IsLast:  true,
-			}
-			return
-		}
-		if resp.Choices[0].Delta.Content == "" {
+		choice := resp.Choices[0]
+		content += choice.Delta.Content
+		reasoning += choice.Delta.ReasoningContent
+
+		// finish_reason is only set on the terminal chunk, but it isn't always
+		// "stop" (e.g. "length" when max_tokens is hit, "tool_calls", etc.) -
+		// any non-empty value means this is the last chunk
+		isLast := choice.FinishReason != ""
+		if !isLast && choice.Delta.Content == "" && choice.Delta.ReasoningContent == "" {
 			continue
 		}
 		uc <- contract.CompletionUpdate{
-			Message: message,
-			IsLast:  false,
+			Content:   content,
+			Reasoning: reasoning,
+			IsLast:    isLast,
 		}
+		if isLast {
+			return
+		}
+	}
+	// stream ended without a terminal chunk (e.g. connection closed early) -
+	// make sure the consumer isn't left blocked waiting on IsLast forever
+	uc <- contract.CompletionUpdate{
+		Content:   content,
+		Reasoning: reasoning,
+		IsLast:    true,
 	}
 }
