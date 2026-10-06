@@ -17,7 +17,11 @@ Only private chat is tested as of now.
 
 ### Chatting
 
-If you send messages without a reply, bot treats that as starting a new chat / thread. To continue a chat / thread, reply to the last (or previous) message you want to pick up the conversation from.
+Just keep sending messages — the bot automatically continues the conversation from the most recent message, so you don't need to reply to keep a thread going.
+
+To branch off from an earlier point instead, reply to the specific message you want to pick the conversation up from. Explicit replies always take precedence over the automatic continuation, which is also what `/resend` relies on.
+
+To start a completely fresh thread, send `/new`; your next message begins a new conversation. Previous threads are kept and can still be resumed by replying to one of their messages.
 
 ### Commands
 

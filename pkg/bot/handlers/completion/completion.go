@@ -161,11 +161,34 @@ func addMessageToChain(m *tele.Message) *contract.MessageLink {
 	if store.ChatStore[m.Chat.ID] == nil {
 		store.ChatStore[m.Chat.ID] = make(map[int]*contract.MessageLink)
 	}
+	chat := store.ChatStore[m.Chat.ID]
 
 	var parent int
-	// If this is a reply message, set the parent ID if it exists in the store
-	if m.ReplyTo != nil && store.ChatStore[m.Chat.ID][m.ReplyTo.ID] != nil {
+	switch {
+	case chat[m.ID] != nil:
+		// Re-storing an existing message (e.g. an edit): keep its original
+		// parent so the thread structure stays stable and we never relink it
+		// to a message that came after it.
+		parent = chat[m.ID].Parent
+	case m.ReplyTo != nil && chat[m.ReplyTo.ID] != nil:
+		// Explicit reply: branch/continue from the replied-to message. This
+		// lets users pick up an older point in the conversation on purpose,
+		// and is what /resend relies on.
 		parent = m.ReplyTo.ID
+	case store.NewThreadStore[m.Chat.ID]:
+		// The user ran /new: start a fresh thread. parent stays 0, and we
+		// consume the flag so only this message begins anew.
+		delete(store.NewThreadStore, m.Chat.ID)
+	default:
+		// Implicit follow: with no explicit reply, continue the most recent
+		// message in this chat so users don't have to reply to keep a thread
+		// going. Telegram message IDs increase monotonically per chat, so the
+		// highest stored ID is the current tip of the conversation.
+		for id := range chat {
+			if id > parent {
+				parent = id
+			}
+		}
 	}
 
 	// fmt.Printf("Message: %+v\n", m)

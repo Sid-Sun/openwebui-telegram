@@ -10,7 +10,9 @@ var logger = slog.Default().With(slog.String("package", "Help"))
 
 const helpText = `Here's what I can do:
 
-Just send a message to start a new chat. Reply to a previous message to continue that thread.
+Just keep sending messages — I continue the conversation automatically. Reply to an earlier message to branch off from that point instead.
+
+/new - Start a new conversation thread. Your next message begins fresh.
 
 /reset <system prompt> - Set the system prompt. Takes effect immediately, even in earlier conversations.
 /resend - Reply to a message to regenerate the response from there.

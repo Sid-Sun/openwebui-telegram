@@ -19,6 +19,8 @@ func StartBot(cfg config.Config) {
 
 	slog.Info("[StartBot] Starting Bot")
 	go dumpStore(ch)
+	// Greet everyone the bot has talked to before, without delaying the poller.
+	go ch.Announce(router.StartupAnnouncement)
 	ch.Start()
 }
 
