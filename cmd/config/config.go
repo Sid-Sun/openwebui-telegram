@@ -11,6 +11,7 @@ type Config struct {
 	Models     map[string]Model
 	ModelNames []string
 	OpenAIAPI  OpenAI
+	OllamaAPI  Ollama
 	Bot        BotConfig
 }
 
@@ -45,7 +46,7 @@ func Load() Config {
 		if _, ok := models[model.Name]; ok {
 			panic("duplicate model name")
 		}
-		models[model.Name] = model
+		models[model.Name] = model.Normalize()
 	}
 	if _, ok := models["default"]; !ok {
 		panic("default model not found")
@@ -63,6 +64,9 @@ func Load() Config {
 		OpenAIAPI: OpenAI{
 			Endpoint: viper.GetString("openai.endpoint"),
 			APIKey:   viper.GetString("openai.api_key"),
+		},
+		OllamaAPI: Ollama{
+			Endpoint: viper.GetString("ollama.endpoint"),
 		},
 		Models:     models,
 		ModelNames: modelNames,

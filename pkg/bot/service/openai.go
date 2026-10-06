@@ -3,6 +3,7 @@ package service
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -60,7 +61,11 @@ func generateAPIPayload(chatID int64, promptID int) contract.ChatCompletionPaylo
 	return x
 }
 
-func GetChatResponseStream(chatID int64, promptID int, uc chan contract.CompletionUpdate) error {
+// openAIBackend talks to an OpenAI-compatible chat/completions endpoint
+// (OpenAI itself or a proxy such as OpenWebUI).
+type openAIBackend struct{}
+
+func (openAIBackend) StreamChat(ctx context.Context, chatID int64, promptID int, uc chan contract.CompletionUpdate) error {
 	var payload any
 	model := getModel(chatID)
 	if model.UseMinimalTweaks() {
@@ -76,9 +81,9 @@ func GetChatResponseStream(chatID int64, promptID int, uc chan contract.Completi
 	logger.Debug("api payload", slog.String("payload", string(payloadJSON)))
 
 	client := &http.Client{}
-	req, err := http.NewRequest(http.MethodPost, config.GlobalConfig.OpenAIAPI.Endpoint+"chat/completions", bytes.NewReader(payloadJSON))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, config.GlobalConfig.OpenAIAPI.Endpoint+"chat/completions", bytes.NewReader(payloadJSON))
 	if err != nil {
-		logger.Error("failed to create http request", slog.String("func", "GetChatResponseStream"), slog.Any("error", err))
+		logger.Error("failed to create http request", slog.String("func", "openAIBackend.StreamChat"), slog.Any("error", err))
 		return err
 	}
 
@@ -87,7 +92,7 @@ func GetChatResponseStream(chatID int64, promptID int, uc chan contract.Completi
 
 	res, err := client.Do(req)
 	if err != nil {
-		logger.Error("http request failed", slog.String("func", "GetChatResponseStream"), slog.Any("error", err))
+		logger.Error("http request failed", slog.String("func", "openAIBackend.StreamChat"), slog.Any("error", err))
 		return err
 	}
 	defer res.Body.Close()

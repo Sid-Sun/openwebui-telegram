@@ -5,6 +5,7 @@ import "github.com/sid-sun/openwebui-bot/pkg/bot/contract"
 var defaultModel = Model{
 	Name:            "default",
 	Model:           "llama3:instruct",
+	Backend:         "openai",
 	modelTweakLevel: "basic",
 	Tweaks: contract.ModelTweaks{
 		ContextLength:    8192,
@@ -17,8 +18,12 @@ var defaultModel = Model{
 }
 
 type Model struct {
-	Name            string               `mapstructure:"name"`
-	Model           string               `mapstructure:"model"`
+	Name  string `mapstructure:"name"`
+	Model string `mapstructure:"model"`
+	// Backend selects which completion backend serves this model: "openai"
+	// (OpenAI-compatible chat/completions endpoint) or "ollama" (native
+	// Ollama daemon via POST /api/chat). Empty defaults to "openai".
+	Backend         string               `mapstructure:"backend"`
 	modelTweakLevel string               `mapstructure:"tweak_level"`
 	Tweaks          contract.ModelTweaks `mapstructure:"tweaks"`
 	// ReasoningEffort is passed through verbatim as "reasoning_effort" to the
@@ -30,6 +35,19 @@ type Model struct {
 
 func (m Model) UseMinimalTweaks() bool {
 	return m.modelTweakLevel != "advanced"
+}
+
+// Normalize applies defaults and validates the model entry. An empty Backend
+// means "openai" for backward compatibility with configs written before the
+// backend option existed.
+func (m Model) Normalize() Model {
+	if m.Backend == "" {
+		m.Backend = "openai"
+	}
+	if m.Backend != "openai" && m.Backend != "ollama" {
+		panic("invalid backend for model " + m.Name + ": must be openai or ollama")
+	}
+	return m
 }
 
 func (m Model) GetAdvancedTweaks() contract.ModelTweaks {

@@ -2,16 +2,35 @@ api_token: "1234567890:efwjbfjbew_ewbfjkbwjkbfkjbwrjkvbkjr"
 openai:
   api_key: "sk-12345667890abcdefghijkl"
   endpoint: "http://localhost:3000/ollama/v1/"
+ollama:
+  # Base host of the Ollama daemon for models with `backend: ollama`.
+  # Note: this is NOT a /v1/ suffixed OpenAI-compatible path.
+  endpoint: "http://localhost:11434"
 models:
   - name: "default"
     model: "llama3:instruct"
+    # Backend for this model: "openai" (OpenAI-compatible chat/completions
+    # endpoint, the default when omitted) or "ollama" (native Ollama daemon
+    # via POST /api/chat using the official ollama/api client).
+    backend: "openai"
     tweak_level: "basic" # any value but "advanced" is basic.
-    # Optional. Passed through verbatim as "reasoning_effort" to backends that
-    # support toggling/tuning extended thinking (e.g. LM Studio, vLLM). Use
-    # "none" to disable thinking, or "low"/"medium"/"high" to tune it. Leave
-    # unset to omit the field entirely and use the backend's default.
+    # Optional. Passed through to the backend to toggle/tune extended
+    # thinking: the OpenAI backend sends it verbatim as "reasoning_effort",
+    # the Ollama backend maps it to "think" ("none" disables thinking).
+    # Use "none" to disable thinking, or "low"/"medium"/"high" to tune it.
+    # Leave unset to omit the field entirely and use the backend's default.
     reasoning_effort: ""
     tweaks:
-      context_length: 8192
-      max_tokens: 1024
+      context_length: 8192 # mapped to num_ctx on the ollama backend
+      max_tokens: 1024 # mapped to num_predict on the ollama backend
       temperature: 0.8
+  # Example native Ollama model (uncomment to use):
+  # - name: "local"
+  #   model: "llama3.1"
+  #   backend: "ollama"
+  #   tweak_level: "basic"
+  #   reasoning_effort: ""
+  #   tweaks:
+  #     context_length: 8192
+  #     max_tokens: 1024
+  #     temperature: 0.8
