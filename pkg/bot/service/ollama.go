@@ -23,8 +23,9 @@ var (
 	ollamaClientEndpoint string
 )
 
-func getOllamaClient() (*api.Client, error) {
-	endpoint := config.GlobalConfig.OllamaAPI.Endpoint
+func getOllamaClient(model config.Model) (*api.Client, error) {
+	backend := config.GlobalConfig.Backends[model.Backend]
+	endpoint := backend.Endpoint
 	ollamaClientMu.Lock()
 	defer ollamaClientMu.Unlock()
 	if ollamaClient != nil && ollamaClientEndpoint == endpoint {
@@ -90,7 +91,7 @@ func mapOllamaOptions(model config.Model) map[string]any {
 func (ollamaBackend) StreamChat(ctx context.Context, chatID int64, promptID int, uc chan contract.CompletionUpdate) error {
 	model := getModel(chatID)
 
-	client, err := getOllamaClient()
+	client, err := getOllamaClient(model)
 	if err != nil {
 		return err
 	}

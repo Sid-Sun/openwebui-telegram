@@ -68,6 +68,7 @@ type openAIBackend struct{}
 func (openAIBackend) StreamChat(ctx context.Context, chatID int64, promptID int, uc chan contract.CompletionUpdate) error {
 	var payload any
 	model := getModel(chatID)
+	openaiBackend := config.GlobalConfig.Backends[model.Backend]
 	if model.UseMinimalTweaks() {
 		payload = generateAPIPayloadMinimal(chatID, promptID)
 	} else {
@@ -81,14 +82,14 @@ func (openAIBackend) StreamChat(ctx context.Context, chatID int64, promptID int,
 	logger.Debug("api payload", slog.String("payload", string(payloadJSON)))
 
 	client := &http.Client{}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, config.GlobalConfig.OpenAIAPI.Endpoint+"chat/completions", bytes.NewReader(payloadJSON))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, openaiBackend.Endpoint+"chat/completions", bytes.NewReader(payloadJSON))
 	if err != nil {
 		logger.Error("failed to create http request", slog.String("func", "openAIBackend.StreamChat"), slog.Any("error", err))
 		return err
 	}
 
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", "Bearer "+config.GlobalConfig.OpenAIAPI.APIKey)
+	req.Header.Add("Authorization", "Bearer "+openaiBackend.APIKey)
 
 	res, err := client.Do(req)
 	if err != nil {

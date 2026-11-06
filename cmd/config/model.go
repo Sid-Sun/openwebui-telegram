@@ -2,7 +2,7 @@ package config
 
 import "github.com/sid-sun/openwebui-bot/pkg/bot/contract"
 
-var defaultModel = Model{
+var _ = Model{
 	Name:            "default",
 	Model:           "llama3:instruct",
 	Backend:         "openai",
@@ -37,15 +37,9 @@ func (m Model) UseMinimalTweaks() bool {
 	return m.modelTweakLevel != "advanced"
 }
 
-// Normalize applies defaults and validates the model entry. An empty Backend
-// means "openai" for backward compatibility with configs written before the
-// backend option existed.
-func (m Model) Normalize() Model {
-	if m.Backend == "" {
-		m.Backend = "openai"
-	}
-	if m.Backend != "openai" && m.Backend != "ollama" {
-		panic("invalid backend for model " + m.Name + ": must be openai or ollama")
+func (m Model) Validate(backends map[string]Backend) Model {
+	if _, ok := backends[m.Backend]; !ok {
+		panic("Invalid backend: " + m.Backend + " for model: " + m.Name + ", backend is not defined")
 	}
 	return m
 }

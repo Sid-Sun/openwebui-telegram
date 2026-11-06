@@ -1,18 +1,21 @@
 api_token: "1234567890:efwjbfjbew_ewbfjkbwjkbfkjbwrjkvbkjr"
-openai:
-  api_key: "sk-12345667890abcdefghijkl"
-  endpoint: "http://localhost:3000/ollama/v1/"
-ollama:
-  # Base host of the Ollama daemon for models with `backend: ollama`.
-  # Note: this is NOT a /v1/ suffixed OpenAI-compatible path.
-  endpoint: "http://localhost:11434"
+backends:
+  openaiapi:
+    type: "openai"
+    api_key: "sk-12345667890abcdefghijkl"
+    endpoint: "http://localhost:3000/ollama/v1/"
+  localollama:
+    type: "ollama"
+    # Base host of the Ollama daemon for models with `backend: ollama`.
+    # Note: this is NOT a /v1/ suffixed OpenAI-compatible path.
+    endpoint: "http://localhost:11434"
 models:
   - name: "default"
     model: "llama3:instruct"
     # Backend for this model: "openai" (OpenAI-compatible chat/completions
     # endpoint, the default when omitted) or "ollama" (native Ollama daemon
     # via POST /api/chat using the official ollama/api client).
-    backend: "openai"
+    backend: "openaiapi"
     tweak_level: "basic" # any value but "advanced" is basic.
     # Optional. Passed through to the backend to toggle/tune extended
     # thinking: the OpenAI backend sends it verbatim as "reasoning_effort",
