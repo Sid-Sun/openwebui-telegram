@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/sid-sun/openwebui-bot/cmd/config"
-	"github.com/sid-sun/openwebui-bot/pkg/bot/contract"
-	"github.com/sid-sun/openwebui-bot/pkg/bot/store"
+	"github.com/sid-sun/openwebui-telegram/cmd/config"
+	"github.com/sid-sun/openwebui-telegram/pkg/bot/contract"
+	"github.com/sid-sun/openwebui-telegram/pkg/bot/store"
 )
 
 var logger = slog.Default().With(slog.String("package", "Completion"))

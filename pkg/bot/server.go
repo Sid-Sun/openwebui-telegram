@@ -6,9 +6,9 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/sid-sun/openwebui-bot/cmd/config"
-	"github.com/sid-sun/openwebui-bot/pkg/bot/router"
-	"github.com/sid-sun/openwebui-bot/pkg/bot/store"
+	"github.com/sid-sun/openwebui-telegram/cmd/config"
+	"github.com/sid-sun/openwebui-telegram/pkg/bot/router"
+	"github.com/sid-sun/openwebui-telegram/pkg/bot/store"
 )
 
 // StartBot starts the bot, inits all the requited submodules and routine for shutdown

@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 
-	"github.com/sid-sun/openwebui-bot/pkg/bot/contract"
+	"github.com/sid-sun/openwebui-telegram/pkg/bot/contract"
 )
 
 var _ = Model{

@@ -3,7 +3,7 @@ package models
 import (
 	"fmt"
 
-	"github.com/sid-sun/openwebui-bot/cmd/config"
+	"github.com/sid-sun/openwebui-telegram/cmd/config"
 	tele "gopkg.in/telebot.v3"
 )
 

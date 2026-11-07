@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/bep/debounce"
-	"github.com/sid-sun/openwebui-bot/pkg/bot/contract"
-	"github.com/sid-sun/openwebui-bot/pkg/bot/service"
-	"github.com/sid-sun/openwebui-bot/pkg/bot/store"
+	"github.com/sid-sun/openwebui-telegram/pkg/bot/contract"
+	"github.com/sid-sun/openwebui-telegram/pkg/bot/service"
+	"github.com/sid-sun/openwebui-telegram/pkg/bot/store"
 	tele "gopkg.in/telebot.v3"
 )
 

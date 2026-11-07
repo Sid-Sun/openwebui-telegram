@@ -3,7 +3,7 @@ package reset
 import (
 	"log/slog"
 
-	"github.com/sid-sun/openwebui-bot/pkg/bot/store"
+	"github.com/sid-sun/openwebui-telegram/pkg/bot/store"
 	tele "gopkg.in/telebot.v3"
 )
 

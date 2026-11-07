@@ -9,8 +9,8 @@ import (
 	"sync"
 
 	"github.com/ollama/ollama/api"
-	"github.com/sid-sun/openwebui-bot/cmd/config"
-	"github.com/sid-sun/openwebui-bot/pkg/bot/contract"
+	"github.com/sid-sun/openwebui-telegram/cmd/config"
+	"github.com/sid-sun/openwebui-telegram/pkg/bot/contract"
 )
 
 // ollamaBackend talks to a native Ollama daemon (POST /api/chat) via the

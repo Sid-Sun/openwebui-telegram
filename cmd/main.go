@@ -4,8 +4,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sid-sun/openwebui-bot/cmd/config"
-	"github.com/sid-sun/openwebui-bot/pkg/bot"
+	"github.com/sid-sun/openwebui-telegram/cmd/config"
+	"github.com/sid-sun/openwebui-telegram/pkg/bot"
 )
 
 func main() {

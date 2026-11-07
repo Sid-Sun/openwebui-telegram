@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/sid-sun/openwebui-bot/cmd/config"
-	"github.com/sid-sun/openwebui-bot/pkg/bot/contract"
+	"github.com/sid-sun/openwebui-telegram/cmd/config"
+	"github.com/sid-sun/openwebui-telegram/pkg/bot/contract"
 )
 
 // Backend streams a chat completion for the prompt identified by

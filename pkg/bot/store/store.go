@@ -1,7 +1,7 @@
 package store
 
 import (
-	"github.com/sid-sun/openwebui-bot/pkg/bot/contract"
+	"github.com/sid-sun/openwebui-telegram/pkg/bot/contract"
 )
 
 var ChatStore map[int64]map[int]*contract.MessageLink
