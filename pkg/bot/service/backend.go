@@ -17,9 +17,12 @@ type Backend interface {
 }
 
 func newBackend(model config.Model) (Backend, error) {
-	switch model.Backend {
-	case "", "openai":
+	backendType := config.GlobalConfig.Backends[model.Backend].Type
+	switch backendType {
+	case "openai":
 		return openAIBackend{}, nil
+	case "openaisdk":
+		return openAISDKBackend{}, nil
 	case "ollama":
 		return ollamaBackend{}, nil
 	default:

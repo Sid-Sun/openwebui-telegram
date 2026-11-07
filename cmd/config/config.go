@@ -11,15 +11,11 @@ type Config struct {
 	Models     map[string]Model
 	ModelNames []string
 	Backends   map[string]Backend
-	// OpenAIModels map[string]OpenAI
-	// OllamaModels map[string]Ollama
-	Bot BotConfig
+	Bot        BotConfig
 }
 
 // Load reads all config from env to config
 func Load() Config {
-	viper.AutomaticEnv()
-
 	viper.SetConfigName("config")      // name of config file (without extension)
 	viper.SetConfigType("yaml")        // REQUIRED if the config file does not have the extension in the name
 	viper.AddConfigPath(".")           // optionally look for config in the working directory

@@ -4,6 +4,10 @@ backends:
     type: "openai"
     api_key: "sk-12345667890abcdefghijkl"
     endpoint: "http://localhost:3000/ollama/v1/"
+  openaisdkapi:
+    type: "openaisdk"
+    api_key: "sk-12345667890abcdefghijkl"
+    endpoint: "http://localhost:3000/ollama/v1/"
   localollama:
     type: "ollama"
     # Base host of the Ollama daemon for models with `backend: ollama`.

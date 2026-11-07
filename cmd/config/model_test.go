@@ -4,10 +4,11 @@ import "testing"
 
 func TestNormalizeBackendValid(t *testing.T) {
 	backend := map[string]Backend{
-		"openai": {Type: "openai"},
-		"ollama": {Type: "ollama"},
+		"openai":    {Type: "openai"},
+		"openaisdk": {Type: "openaisdk"},
+		"ollama":    {Type: "ollama"},
 	}
-	for _, b := range []string{"openai", "ollama"} {
+	for _, b := range []string{"openai", "openaisdk", "ollama"} {
 		m := Model{Name: "x", Model: "y", Backend: b}.Validate(backend)
 		if m.Backend != b {
 			t.Fatalf("expected backend %q preserved, got %q", b, m.Backend)
