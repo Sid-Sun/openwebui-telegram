@@ -24,7 +24,7 @@ var (
 )
 
 func getOllamaClient(model config.Model) (*api.Client, error) {
-	backend := config.GlobalConfig.Backends[model.Backend]
+	backend := config.GetConfig().Backends[model.Backend]
 	endpoint := backend.Endpoint
 	ollamaClientMu.Lock()
 	defer ollamaClientMu.Unlock()

@@ -1,10 +1,25 @@
 package config
 
 import (
+	"bytes"
+	"fmt"
+	"sync/atomic"
+
+	"github.com/fitant/storage-engine-go/storageengine"
 	"github.com/spf13/viper"
 )
 
-var GlobalConfig Config
+var globalConfig atomic.Pointer[Config]
+
+func updateConfig(cfg Config) {
+	globalConfig.Store(&cfg)
+}
+
+func GetConfig() *Config {
+	return globalConfig.Load()
+}
+
+var seObject *storageengine.Object
 
 // Config contains all the neccessary configurations
 type Config struct {
@@ -14,30 +29,21 @@ type Config struct {
 	Bot        BotConfig
 }
 
-// Load reads all config from env to config
-func Load() Config {
-	viper.SetConfigName("config")      // name of config file (without extension)
-	viper.SetConfigType("yaml")        // REQUIRED if the config file does not have the extension in the name
-	viper.AddConfigPath(".")           // optionally look for config in the working directory
-	viper.AddConfigPath("config")      // optionally look for config in the working directory
-	viper.AddConfigPath("data")        // optionally look for config in the working directory
-	viper.AddConfigPath("data/config") // optionally look for config in the working directory
-	viper.ReadInConfig()               // Find and read the config file
-
+func parseConfig(v *viper.Viper) (Config, error) {
 	backends := make(map[string]Backend)
-	err := viper.UnmarshalKey("backends", &backends)
+	err := v.UnmarshalKey("backends", &backends)
 	if err != nil {
-		panic(err)
+		return Config{}, err
 	}
 
 	for backendName, backend := range backends {
 		backends[backendName] = backend.Validate(backendName)
 	}
 
-	modelList := make([]Model, 1)
-	err = viper.UnmarshalKey("models", &modelList)
+	var modelList []Model
+	err = v.UnmarshalKey("models", &modelList)
 	if err != nil {
-		panic(err)
+		return Config{}, err
 	}
 
 	// Initialize modelNames and models from modelList
@@ -46,21 +52,72 @@ func Load() Config {
 	for i, model := range modelList {
 		modelNames[i] = model.Name
 		if _, ok := models[model.Name]; ok {
-			panic("duplicate model name")
+			return Config{}, fmt.Errorf("duplicate model: %s", model.Name)
 		}
-		models[model.Name] = model.Validate(backends)
+		err = model.Validate(backends)
+		if err != nil {
+			return Config{}, err
+		}
 	}
 	if _, ok := models["default"]; !ok {
-		panic("default model not found")
+		return Config{}, fmt.Errorf("default model not found")
 	}
 
-	GlobalConfig = Config{
+	return Config{
 		Bot: BotConfig{
-			tkn: viper.GetString("api_token"),
+			tkn: v.GetString("api_token"),
 		},
 		Backends:   backends,
 		Models:     models,
 		ModelNames: modelNames,
+	}, nil
+}
+
+// Load reads all config from env to config
+func Load() (Config, error) {
+	v := viper.New()
+	v.SetConfigName("config")      // name of config file (without extension)
+	v.SetConfigType("yaml")        // REQUIRED if the config file does not have the extension in the name
+	v.AddConfigPath(".")           // optionally look for config in the working directory
+	v.AddConfigPath("config")      // optionally look for config in the working directory
+	v.AddConfigPath("data")        // optionally look for config in the working directory
+	v.AddConfigPath("data/config") // optionally look for config in the working directory
+	if err := v.ReadInConfig(); err != nil {
+		return Config{}, fmt.Errorf("read local config: %w", err)
 	}
-	return GlobalConfig
+	cfg, err := parseConfig(v)
+	if err != nil {
+		return Config{}, err
+	}
+	updateConfig(cfg)
+	return cfg, nil
+}
+
+func LoadConfigFromSE() (Config, error) {
+	if seObject == nil {
+		obj, err := initSEObj()
+		if err != nil {
+			return Config{}, err
+		}
+		seObject = obj
+	} else {
+		if err := seObject.Refresh(); err != nil {
+			return Config{}, err
+		}
+	}
+
+	v := viper.New()
+	v.SetConfigType("yaml")
+	seCfgStr := seObject.GetData()
+	if err := v.ReadConfig(bytes.NewReader([]byte(seCfgStr))); err != nil {
+		return Config{}, fmt.Errorf("read local config: %w", err)
+	}
+
+	cfg, err := parseConfig(v)
+	if err != nil {
+		return Config{}, err
+	}
+
+	updateConfig(cfg)
+	return cfg, nil
 }

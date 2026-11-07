@@ -68,7 +68,7 @@ type openAIBackend struct{}
 func (openAIBackend) StreamChat(ctx context.Context, chatID int64, promptID int, uc chan contract.CompletionUpdate) error {
 	var payload any
 	model := getModel(chatID)
-	openaiBackend := config.GlobalConfig.Backends[model.Backend]
+	openaiBackend := config.GetConfig().Backends[model.Backend]
 	if model.UseMinimalTweaks() {
 		payload = generateAPIPayloadMinimal(chatID, promptID)
 	} else {

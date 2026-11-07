@@ -17,7 +17,7 @@ type Backend interface {
 }
 
 func newBackend(model config.Model) (Backend, error) {
-	backendType := config.GlobalConfig.Backends[model.Backend].Type
+	backendType := config.GetConfig().Backends[model.Backend].Type
 	switch backendType {
 	case "openai":
 		return openAIBackend{}, nil

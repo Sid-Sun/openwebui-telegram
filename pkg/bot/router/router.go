@@ -62,6 +62,15 @@ func (b Bot) Start() {
 	callbackGroup.Handle(tele.OnCallback, models.CallbackHandler(b.bot))
 	// Add all other handlers
 	b.bot.Handle("/resend", completion.Handler(b.bot, completion.RegenerateCompletion))
+	b.bot.Handle("/reload", func(ctx tele.Context) error {
+		// ctx.Message().Sender.ID
+		_, err := config.LoadConfigFromSE()
+		if err != nil {
+			ctx.Send("Config reload failed: " + err.Error())
+		}
+		ctx.Send("Config reloaded successfully")
+		return nil
+	})
 	b.bot.Handle(tele.OnEdited, completion.Handler(b.bot, completion.EditCompletion))
 	b.bot.Handle(tele.OnText, completion.Handler(b.bot, completion.NewCompletion))
 	b.bot.Start()

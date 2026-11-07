@@ -23,7 +23,7 @@ var (
 )
 
 func getOpenAISDKClient(model config.Model) openai.Client {
-	backend := config.GlobalConfig.Backends[model.Backend]
+	backend := config.GetConfig().Backends[model.Backend]
 	openAISDKClientsMu.Lock()
 	defer openAISDKClientsMu.Unlock()
 	if client, ok := openAISDKClients[model.Backend]; ok {

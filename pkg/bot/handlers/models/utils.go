@@ -13,8 +13,8 @@ func getInlineKeyboardMarkup(currentModel string) (string, [][]tele.InlineButton
 	if currentModel == "" {
 		currentModel = "default"
 	}
-	for _, modelName := range config.GlobalConfig.ModelNames {
-		options := config.GlobalConfig.Models[modelName]
+	for _, modelName := range config.GetConfig().ModelNames {
+		options := config.GetConfig().Models[modelName]
 		text := fmt.Sprintf("%s (%s) [%s] - %d", modelName, options.Model, options.Backend, options.Tweaks.ContextLength)
 		if currentModel == modelName {
 			text = fmt.Sprintf("*%s* (%s) [%s] - %d", modelName, options.Model, options.Backend, options.Tweaks.ContextLength)

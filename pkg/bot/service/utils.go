@@ -21,7 +21,7 @@ func getSystemPrompt(chatID int64) string {
 
 func getModel(chatID int64) config.Model {
 	if store.ModelStore[chatID] == "" {
-		return config.GlobalConfig.Models["default"]
+		return config.GetConfig().Models["default"]
 	}
-	return config.GlobalConfig.Models[store.ModelStore[chatID]]
+	return config.GetConfig().Models[store.ModelStore[chatID]]
 }

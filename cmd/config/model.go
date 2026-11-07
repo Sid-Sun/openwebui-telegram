@@ -1,6 +1,10 @@
 package config
 
-import "github.com/sid-sun/openwebui-bot/pkg/bot/contract"
+import (
+	"fmt"
+
+	"github.com/sid-sun/openwebui-bot/pkg/bot/contract"
+)
 
 var _ = Model{
 	Name:            "default",
@@ -37,11 +41,11 @@ func (m Model) UseMinimalTweaks() bool {
 	return m.modelTweakLevel != "advanced"
 }
 
-func (m Model) Validate(backends map[string]Backend) Model {
+func (m Model) Validate(backends map[string]Backend) error {
 	if _, ok := backends[m.Backend]; !ok {
-		panic("Invalid backend: " + m.Backend + " for model: " + m.Name + ", backend is not defined")
+		return fmt.Errorf("Invalid backend: %s for model: %s, backend is not defined", m.Backend, m.Name)
 	}
-	return m
+	return nil
 }
 
 func (m Model) GetAdvancedTweaks() contract.ModelTweaks {

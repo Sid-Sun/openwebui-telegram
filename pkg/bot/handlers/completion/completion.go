@@ -50,7 +50,8 @@ func Handler(b *tele.Bot, handlerMode HandlerMode) tele.HandlerFunc {
 		go func() {
 			err := service.GetChatResponseStream(chatID, promptID, updatesChan)
 			if err != nil {
-				logger.Error("could not generate completion", slog.String("conext", "GetChatResponseStream"), slog.Any("error", err))
+				logger.Error("could not generate completion", slog.String("conext", "GetChatResponseStream"),
+					slog.Any("error", err))
 			}
 		}()
 
