@@ -67,6 +67,7 @@ func (b Bot) Start() {
 		_, err := config.LoadConfigFromSE()
 		if err != nil {
 			ctx.Send("Config reload failed: " + err.Error())
+			return nil
 		}
 		ctx.Send("Config reloaded successfully")
 		return nil

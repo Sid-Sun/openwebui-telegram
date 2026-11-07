@@ -50,7 +50,6 @@ func parseConfig(v *viper.Viper) (Config, error) {
 	modelNames := make([]string, len(modelList))
 	models := make(map[string]Model)
 	for i, model := range modelList {
-		modelNames[i] = model.Name
 		if _, ok := models[model.Name]; ok {
 			return Config{}, fmt.Errorf("duplicate model: %s", model.Name)
 		}
@@ -58,6 +57,8 @@ func parseConfig(v *viper.Viper) (Config, error) {
 		if err != nil {
 			return Config{}, err
 		}
+		modelNames[i] = model.Name
+		models[model.Name] = model
 	}
 	if _, ok := models["default"]; !ok {
 		return Config{}, fmt.Errorf("default model not found")

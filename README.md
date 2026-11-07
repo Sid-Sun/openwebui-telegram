@@ -4,12 +4,25 @@
 
 ## Configuration
 
-The configuration is loaded a yaml file, en example is provided in `example.yaml` and should be self-explanatory, it has to be stored in `config.yaml` under either:
+The configuration is loaded from a YAML file (an example is provided in `example.yaml` and should be self-explanatory). By default, it is read from `config.yaml` under one of:
 
 - current directory
 - `data` directory
 - `config` directory
 - `data/config` directory
+
+### Storage Engine (Remote Configuration & Hot-Reload)
+
+You can optionally back the configuration with a remote [Storage Engine](https://github.com/fitant/storage-engine-go) object, allowing you to hot-reload configuration changes at runtime without restarting the bot.
+
+Note that a valid local `config.yaml` is still loaded first on startup before the Storage Engine config is fetched. To load configuration from Storage Engine on startup, set the following environment variables:
+
+- `SE_CONFIG_ENABLED`: Set to `TRUE` (case-insensitive) to load the configuration from Storage Engine at startup.
+- `SE_URL`: The Storage Engine server URL.
+- `SE_OBJ_ID`: The Storage Engine object ID containing your YAML configuration.
+- `SE_OBJ_PASS`: The password for the Storage Engine object.
+
+> **Note:** Hot-reloading updates backends and models in-place, but the Telegram bot `api_token` itself is not hot-reloaded — the bot will continue running with the token it started with.
 
 ## Usage
 
@@ -25,7 +38,7 @@ To start a completely fresh thread, send `/new`; your next message begins a new 
 
 ### Commands
 
-The bot supports three commands:
+The bot supports the following commands:
 
 1. To set system prompt, use `/reset <system prompt>`.
    - The default system prompt is `You are a friendly assistant`.
@@ -37,6 +50,9 @@ The bot supports three commands:
    - It will present you with the available model, friendly names and basic config.
    - Select the model using the inline keyboard.
    - This takes effect immediately after you set it, even in earlier conversations.
+4. To hot-reload the configuration from Storage Engine, use `/reload`.
+   - Fetches the latest YAML configuration from the configured Storage Engine object (`SE_URL`, `SE_OBJ_ID`, `SE_OBJ_PASS`) and updates backends and models in-place.
+   - The bot `api_token` does not hot-reload.
 
 ## How to run
 
