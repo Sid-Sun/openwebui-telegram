@@ -12,7 +12,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  VERSION: v2.${{ github.run_number }}
+  VERSION: v2.${{ github.run_number }}.0
 
 jobs:
   build-and-release:
