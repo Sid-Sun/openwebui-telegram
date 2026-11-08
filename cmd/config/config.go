@@ -29,7 +29,7 @@ type Config struct {
 	Bot        BotConfig
 }
 
-func parseConfig(v *viper.Viper) (Config, error) {
+func ParseConfig(v *viper.Viper) (Config, error) {
 	backends := make(map[string]Backend)
 	err := v.UnmarshalKey("backends", &backends)
 	if err != nil {
@@ -86,7 +86,7 @@ func Load() (Config, error) {
 	if err := v.ReadInConfig(); err != nil {
 		return Config{}, fmt.Errorf("read local config: %w", err)
 	}
-	cfg, err := parseConfig(v)
+	cfg, err := ParseConfig(v)
 	if err != nil {
 		return Config{}, err
 	}
@@ -114,7 +114,7 @@ func LoadConfigFromSE() (Config, error) {
 		return Config{}, fmt.Errorf("read local config: %w", err)
 	}
 
-	cfg, err := parseConfig(v)
+	cfg, err := ParseConfig(v)
 	if err != nil {
 		return Config{}, err
 	}
